@@ -5,6 +5,7 @@ import (
     "strconv"
     "fmt"
     "os"
+    "container/list"
 )
 
 const (
@@ -31,25 +32,24 @@ var (
 	account_number int
 	display_parmname string
 	include_overshort string
-	endq question_type
+	endq Question
 )
 
 //***********************
 // Report to printer, screen or disk routines
 //***********************
 
-var report_filename = make([]question_type, 2)
+var report_filename = list.New()
 
 func init() {
     msg := "What is the name of the disk file?"
-    q1 := question_type {
+    q := Question {
 	    text : &msg,
 	    response: &dest_filename,
 	    validate: filename_val,
 	    doit : no_op,
 	    set : checkerror_end_group }
-    report_filename[0] = q1
-    report_filename[1] = endq
+    report_filename.PushBack(q)
 }
 
 func filename_val(pc *prcontrol) int {
@@ -91,42 +91,45 @@ func reportdest_set(pc *prcontrol) int {
 // Account routines
 //**************************
 
-var account_range = make([]question_type, 3)
+var account_range = list.New()
 
 func init() {
      var str [2]string
+
      str[0] = "Enter the starting account."
      str[1] = "Enter the ending account."
 
-     account_range[0] = question_type {
+     q := Question {
 	 text : &str[0],
 	 response : &start_account,
 	 validate : account_val,
 	 doit : no_op,
 	 set : checkerror_next_question }
 
-     account_range[1] = question_type {
+     q1 := Question {
 	 text : &str[1],
 	 response : &end_account,
 	 validate : end_account_val,
 	 doit : no_op,
 	 set : end_account_set }
 
-     account_range[2] = endq
+     account_range.PushBack(q)
+     account_range.PushBack(q1)
 }
 
-var account = make([]question_type, 2)
+var account = list.New()
 
 func init() {
      str := "Enter the Account."
 
-     account[0] = question_type {
+     q := Question {
 	 text : &str,
 	 response : &start_account,
 	 validate : account_val,
 	 doit : save_account_doit,
 	 set : checkerror_end_group }
-     account[1] = endq
+
+     account.PushBack(q)
 }
 
 //*****************************
@@ -235,7 +238,7 @@ func yesno_val(pc *prcontrol) int {
 // Main question array procedure table
 //**************************************
 
-var account_parms = make([]question_type, 5)
+var account_parms = list.New()
 
 func init () {
      var account_parms_text = make([]string, 4)
@@ -244,31 +247,46 @@ func init () {
      account_parms_text[2] = "Do you want to include the Over/Short Report? (Y/N)"
      account_parms_text[3] = "Do you want this report on the printer, screen, or saved to disk?(P,S or D)"
 
-     account_parms[0] = question_type {
+     q := Question {
 	 text : &account_parms_text[0],
 	 response : &single_or_range,
 	 validate : account_or_range_val,
          doit : no_op,
          set : account_or_range_set }
-     account_parms[1] = question_type {
+
+     q1 := Question {
 	 text : &account_parms_text[1],
 	 response : &display_parmname,
 	 validate : parmname_val,
          doit : no_op,
          set : checkerror_next_question }
-     account_parms[2] = question_type {
+
+     q2 := Question {
 	 text : &account_parms_text[2],
 	 response : nil,
 	 validate : yesno_val,
          doit : no_op,
          set : checkerror_next_question }
-     account_parms[3] = question_type {
+
+     q3 := Question {
 	 text : &account_parms_text[3],
 	 response : &report_destination,
 	 validate : reportdest_val,
          doit : no_op,
          set : reportdest_set }
-     account_parms[4] = endq
+
+     q4 := Question {
+	 text : nil,
+	 response : nil,
+	 validate : no_op,
+	 doit : prgexit,
+	 set : no_op }
+
+     account_parms.PushBack(q)
+     account_parms.PushBack(q1)
+     account_parms.PushBack(q2)
+     account_parms.PushBack(q3)
+     account_parms.PushBack(q4)
 }
 
 var account_errormess = make(map[int]errormesstype)
@@ -316,6 +334,7 @@ func main() {
      if errstat = prompter(prctl); errstat > 0 {
 	 handle_error(errstat, account_errormess)
      }
+
      // Print the report with gathered parameters
 }
 
