@@ -80,9 +80,9 @@ func reportdest_set(pc *prcontrol) int {
      resp := *pc.response
 
      if strings.HasPrefix(resp, "d") {
-	start_group(report_filename, pc)
+	pc.start_group(report_filename)
      } else if strings.HasPrefix(resp, "p") || strings.HasPrefix(resp, "s") {
-	next_question(pc)
+	pc.next_question()
      }
      return NO_ERROR
 }
@@ -148,9 +148,9 @@ func account_or_range_val(pc *prcontrol) int {
 func account_or_range_set(pc *prcontrol) int {
      if pc.errstat == NO_ERROR {
         if strings.HasPrefix(*pc.response, "r") {
-	    start_group(account_range, pc)
+	    pc.start_group(account_range)
         } else if strings.HasPrefix(*pc.response, "s") {
-	    start_group(account, pc)
+	    pc.start_group(account)
         }
      }
      return NO_ERROR
@@ -185,9 +185,9 @@ func end_account_val(pc *prcontrol) int {
 func end_account_set(pc *prcontrol) int {
     switch(pc.errstat) {
 	case NO_ERROR:
-	     end_group(pc)
+	     pc.end_group()
 	case START_ACCOUNT_LARGER:
-	     restart_group(pc)
+	     pc.restart_group()
         case BAD_ACCOUNT_NUMBER:
     }
     return NO_ERROR
@@ -326,12 +326,12 @@ func init() {
 
 func main() {
      var errstat int
-     var prctl *prcontrol = new(prcontrol)
+     prctl := NewPrControl()
 
      prctl.current_group = account_parms
      prctl.errormess = account_errormess
 
-     if errstat = prompter(prctl); errstat > 0 {
+     if errstat = prctl.prompter(); errstat > 0 {
 	 handle_error(errstat, account_errormess)
      }
 
